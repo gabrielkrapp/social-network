@@ -22,4 +22,7 @@ func main() {
 
 	defer database.Close()
 
+	router := Router(database)
+	server.Handler = router
+
 }
