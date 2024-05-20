@@ -35,8 +35,6 @@ Thumbs.db
 # Diretório que contém perfis de desempenho do usuário
 /pprof/
 
-# Pastas de configuração do Go
-/pkg/
 
 # Pastas de cache do Go
 **/node_modules/

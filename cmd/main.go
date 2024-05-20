@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"social-network/model/config"
-	"social-network/model/config/db"
+	"social-network/config"
+	"social-network/config/db"
 )
 
 func main() {
@@ -21,5 +21,8 @@ func main() {
 	}
 
 	defer database.Close()
+
+	router := Router(database)
+	server.Handler = router
 
 }
