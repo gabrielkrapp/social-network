@@ -1,13 +1,14 @@
-package database
+package auth
 
 import (
 	"database/sql"
 	"errors"
+	"social-network/pkg/database"
 )
 
 func RegisterUser(db *sql.DB, username, hashedPassword string) error {
 
-	exists, err := VerifyIfUserExist(db, username)
+	exists, err := database.VerifyIfUserExist(db, username)
 	if err != nil {
 		return err
 	}
