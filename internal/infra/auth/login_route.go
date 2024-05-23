@@ -50,6 +50,8 @@ func Login(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 		})
 
 		log.Printf("User %s logged in successfully", req.Username)
-		w.Write([]byte("User logged in successfully"))
+		if _, err := w.Write([]byte("User logged in successfully")); err != nil {
+			log.Printf("Error writing response: %v", err)
+		}
 	}
 }
