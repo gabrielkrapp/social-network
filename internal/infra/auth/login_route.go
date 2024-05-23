@@ -22,12 +22,12 @@ func Login(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 
 		exists, err := database.VerifyIfUserExist(db, req.Username)
 		if err != nil {
-			http.Error(w, "Error verifying if user Exist", http.StatusBadRequest)
+			http.Error(w, "Error verifying if user exist", http.StatusInternalServerError)
 			return
 		}
 
 		if !exists {
-			http.Error(w, "User don´t exist", http.StatusBadRequest)
+			http.Error(w, "User don’t exist", http.StatusBadRequest)
 			return
 		}
 

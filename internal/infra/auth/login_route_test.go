@@ -9,23 +9,30 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"golang.org/x/crypto/bcrypt"
 )
 
-// TestRegisterHandlerSuccess testa o cenário de sucesso do handler Register.
-func TestRegisterHandlerSuccess(t *testing.T) {
+// TestLoginHandlerSuccess testa o cenário de sucesso do handler Login.
+func TestLoginHandlerSuccess(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
+	password := "password123"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("failed to hash password: %v", err)
+	}
+
 	mock.ExpectQuery("SELECT EXISTS\\(SELECT 1 FROM users WHERE username = \\$1\\)").
 		WithArgs("testuser").
-		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
-	mock.ExpectExec("INSERT INTO users").
-		WithArgs("testuser", sqlmock.AnyArg()).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectQuery("SELECT password FROM users WHERE username = \\$1").
+		WithArgs("testuser").
+		WillReturnRows(sqlmock.NewRows([]string{"password"}).AddRow(string(hashedPassword)))
 
 	userInfo := userInfosRequest{
 		Username: "testuser",
@@ -33,13 +40,13 @@ func TestRegisterHandlerSuccess(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(userInfo)
-	req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", "/login", bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	rr := httptest.NewRecorder()
-	handlerFunc := Register(db)
+	handlerFunc := Login(db)
 	handler := http.HandlerFunc(handlerFunc)
 
 	handler.ServeHTTP(rr, req)
@@ -48,9 +55,18 @@ func TestRegisterHandlerSuccess(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	expected := "User registered successfully"
+	expected := "User logged in successfully"
 	if rr.Body.String() != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
+	}
+
+	if len(rr.Result().Cookies()) == 0 {
+		t.Fatal("expected a token cookie, but none was set")
+	}
+
+	cookie := rr.Result().Cookies()[0]
+	if cookie.Name != "token" {
+		t.Errorf("expected cookie name 'token', got %v", cookie.Name)
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -58,7 +74,7 @@ func TestRegisterHandlerSuccess(t *testing.T) {
 	}
 }
 
-func TestRegisterUser_UserExist(t *testing.T) {
+func TestLoginInvalidPassword(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -69,28 +85,32 @@ func TestRegisterUser_UserExist(t *testing.T) {
 		WithArgs("testuser").
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	mock.ExpectQuery("SELECT password FROM users WHERE username = \\$1").
+		WithArgs("testuser").
+		WillReturnRows(sqlmock.NewRows([]string{"password"}).AddRow(string(hashedPassword)))
+
 	userInfo := userInfosRequest{
 		Username: "testuser",
-		Password: "password123",
+		Password: "wrongpassword",
 	}
-
 	body, _ := json.Marshal(userInfo)
-	req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", "/login", bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	rr := httptest.NewRecorder()
-	handlerFunc := Register(db)
+	handlerFunc := Login(db)
 	handler := http.HandlerFunc(handlerFunc)
 
 	handler.ServeHTTP(rr, req)
 
-	if status := rr.Code; status != http.StatusInternalServerError {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusInternalServerError)
+	if status := rr.Code; status != http.StatusUnauthorized {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusUnauthorized)
 	}
 
-	expected := "Failed to save the user"
+	expected := "Invalid password"
 	if strings.TrimSpace(rr.Body.String()) != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
 	}
