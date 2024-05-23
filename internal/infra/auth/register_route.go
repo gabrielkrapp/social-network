@@ -1,4 +1,4 @@
-package infra
+package auth
 
 import (
 	"database/sql"
@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"social-network/pkg/database"
+	"social-network/pkg/auth"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -32,7 +32,7 @@ func Register(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		if err := database.RegisterUser(db, req.Username, string(hashedPassword)); err != nil {
+		if err := auth.RegisterUser(db, req.Username, string(hashedPassword)); err != nil {
 			log.Printf("Failed to save user: %v", err)
 			http.Error(w, "Failed to save the user", http.StatusInternalServerError)
 			return
