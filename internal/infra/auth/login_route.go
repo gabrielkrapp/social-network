@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"social-network/pkg/auth"
 	"social-network/pkg/database"
-	"social-network/utils"
+	"social-network/utils/jwt"
 )
 
 func Login(db *sql.DB) func(http.ResponseWriter, *http.Request) {
@@ -37,7 +37,7 @@ func Login(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		tokenString, err := utils.GenerateJWT(req.Username)
+		tokenString, err := jwt.GenerateJWT(req.Username)
 		if err != nil {
 			http.Error(w, "Error generating token", http.StatusInternalServerError)
 			return
