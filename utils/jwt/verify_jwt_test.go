@@ -14,16 +14,16 @@ func TestGenerateAndValidateJWT(t *testing.T) {
 
 	tokenString, err := GenerateJWT(username)
 	if err != nil {
-		t.Fatalf("falha ao gerar JWT: %v", err)
+		t.Fatalf("Fail to generate JWT: %v", err)
 	}
 
 	valid, err := VerifyJwt(tokenString)
 	if err != nil {
-		t.Fatalf("falha ao validar JWT: %v", err)
+		t.Fatalf("Fail to valid JWT: %v", err)
 	}
 
 	if !valid {
-		t.Fatalf("token JWT não é válido")
+		t.Fatalf("token JWT is not valid")
 	}
 }
 
@@ -32,10 +32,10 @@ func TestValidateInvalidJWT(t *testing.T) {
 
 	valid, err := VerifyJwt(invalidTokenString)
 	if err == nil {
-		t.Fatalf("esperava um erro, mas não houve nenhum")
+		t.Fatalf("expected a eror")
 	}
 
 	if valid {
-		t.Fatalf("esperava que o token fosse inválido")
+		t.Fatalf("expected the token was invalid")
 	}
 }
