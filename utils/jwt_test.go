@@ -1,11 +1,16 @@
 package utils
 
 import (
+	"os"
 	"testing"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
+
+func init() {
+	os.Setenv("JWT_SECRET_KEY", "test_secret_key")
+}
 
 func TestGenerateJWT(t *testing.T) {
 	username := "testuser"
