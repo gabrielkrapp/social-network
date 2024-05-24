@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"social-network/pkg/post"
-	"social-network/utils/jwt"
 	"strings"
 )
 
@@ -15,7 +14,7 @@ type postInfosRequest struct {
 	Description string `json:"description"`
 }
 
-func CreatePostRoute(db *sql.DB) func(http.ResponseWriter, *http.Request) {
+func CreatePostRoute(db *sql.DB, verifyJwt func(token string) (bool, error), extractUsername func(token string) (string, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		authHeader := r.Header.Get("Authorization")
@@ -30,13 +29,13 @@ func CreatePostRoute(db *sql.DB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		valid, err := jwt.VerifyJwt(tokenString)
+		valid, err := verifyJwt(tokenString)
 		if err != nil || !valid {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
 
-		username, err := jwt.ExtractUsernameFromToken(tokenString)
+		username, err := extractUsername(tokenString)
 		if err != nil {
 			http.Error(w, "Failed to extract username from token", http.StatusUnauthorized)
 			return
